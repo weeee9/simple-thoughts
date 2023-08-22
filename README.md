@@ -3,7 +3,7 @@
 A little project inspired by [tinyprojects.dev](https://tinyprojects.dev)
 
 ## Things todo
-- [ ] read markdown files from given path
+- [x] read markdown files from given path
 - [ ] convert markdown files
 - [ ] save them to given path
 - [ ] tracking files converting record, so we won't re-gen when file's not changed
