@@ -1,6 +1,7 @@
 package main
 
 import (
+	"html/template"
 	"os"
 	"path/filepath"
 	"strings"
@@ -45,6 +46,12 @@ func main() {
 				EnvVars:  []string{"APP_DESTINATION_FOLDER"},
 				Required: true,
 			},
+			&cli.StringSliceFlag{
+				Name:    "templates",
+				Aliases: []string{"tmpls"},
+				Usage:   "Array of templates to use to generate html files",
+				EnvVars: []string{"APP_HTML_TEMPLATES"},
+			},
 		},
 		Action: run,
 	}
@@ -57,6 +64,7 @@ func main() {
 func run(c *cli.Context) error {
 	source := c.String("source")
 	destination := c.String("destination")
+	templates := c.StringSlice("templates")
 
 	entries, err := os.ReadDir(source)
 	if err != nil {
@@ -72,7 +80,7 @@ func run(c *cli.Context) error {
 		}
 
 		log.Info().Str("filename", filename).Msg("processing markdown file")
-		if err := convert(filename, source, destination); err != nil {
+		if err := convert(filename, source, destination, templates...); err != nil {
 			log.Error().Err(err).Str("filename", filename).Msg("failed to convert markdown file")
 			return err
 		}
@@ -82,7 +90,7 @@ func run(c *cli.Context) error {
 	return nil
 }
 
-func convert(filename, src, dst string) error {
+func convert(filename, src, dst string, templates ...string) error {
 	realPath := filepath.Join(src, filename)
 	md, err := os.ReadFile(realPath)
 	if err != nil {
@@ -104,8 +112,26 @@ func convert(filename, src, dst string) error {
 	}
 
 	outputPath := filepath.Join(dst, replaceFileExtensionToHTML(filename))
-	if err := os.WriteFile(outputPath, html, os.ModePerm); err != nil {
-		log.Error().Err(err).Msg("failed to write html file")
+	if len(templates) == 0 {
+		if err := os.WriteFile(outputPath, html, os.ModePerm); err != nil {
+			log.Error().Err(err).Msg("failed to write html file")
+			return err
+		}
+		return nil
+	}
+
+	tmpl, err := template.ParseFiles(templates...)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if err := tmpl.Execute(f, template.HTML(html)); err != nil {
 		return err
 	}
 
