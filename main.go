@@ -64,11 +64,11 @@ func main() {
 }
 
 func run(c *cli.Context) error {
-	source := c.String("source")
-	destination := c.String("destination")
-	templates := c.StringSlice("templates")
+	pathToSource := c.String("source")
+	pathToDestination := c.String("destination")
+	pathToTemplates := c.StringSlice("templates")
 
-	entries, err := os.ReadDir(source)
+	entries, err := os.ReadDir(pathToSource)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to read source folder")
 		return err
@@ -82,7 +82,7 @@ func run(c *cli.Context) error {
 		}
 
 		log.Info().Str("filename", filename).Msg("processing markdown file")
-		if err := convert(filename, source, destination, templates...); err != nil {
+		if err := convert(filename, pathToSource, pathToDestination, pathToTemplates...); err != nil {
 			log.Error().Err(err).Str("filename", filename).Msg("failed to convert markdown file")
 			return err
 		}
