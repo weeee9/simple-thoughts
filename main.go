@@ -50,8 +50,7 @@ func main() {
 			},
 			&cli.StringSliceFlag{
 				Name:    "templates",
-				Aliases: []string{"tmpls"},
-				Usage:   "Array of templates to use to generate html files",
+				Usage:   "List of templates to use to generate html files",
 				EnvVars: []string{"APP_HTML_TEMPLATES"},
 			},
 		},
