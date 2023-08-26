@@ -74,14 +74,14 @@ func main() {
 			&cli.StringFlag{
 				Name:        "github-token",
 				Usage:       "Github token to push changes",
-				EnvVars:     []string{"APP_GITHUB_TOKEN"},
+				EnvVars:     []string{"GITHUB_TOKEN"},
 				Required:    true,
 				Destination: &GITHUB_TOKEN,
 			},
 			&cli.StringFlag{
 				Name:        "github-username",
 				Usage:       "Github username to push changes",
-				EnvVars:     []string{"APP_GITHUB_USERNAME"},
+				EnvVars:     []string{"GITHUB_USERNAME"},
 				Required:    true,
 				Destination: &GITHUB_USERNAME,
 			},
@@ -189,14 +189,14 @@ func run(c *cli.Context) error {
 		return err
 	}
 
-	hash, err := commitChanges(
+	hash, err := commitAndPushChanges(
 		gitUsername,
 		gitUserEmail,
 		pathToDestination,
 		"generated new markdown files",
 	)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to commit changes")
+		log.Error().Err(err).Msg("failed to commit and push changes")
 		return err
 	}
 
@@ -212,7 +212,7 @@ func run(c *cli.Context) error {
 		return err
 	}
 
-	if _, err := commitChanges(
+	if _, err := commitAndPushChanges(
 		gitUsername,
 		gitUserEmail,
 		"_index",
@@ -263,7 +263,7 @@ func getChangedFiles(lastCommit string) ([]string, error) {
 	return changedFiles, nil
 }
 
-func commitChanges(user, email, glob, message string) (hash string, err error) {
+func commitAndPushChanges(user, email, glob, message string) (hash string, err error) {
 	repo, err := git.PlainOpen(".")
 	if err != nil {
 		log.Error().Err(err).Msg("failed to open git repository")
