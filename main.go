@@ -139,9 +139,14 @@ func run(c *cli.Context) error {
 
 	autoCommit := c.Bool("auto-commit")
 
-	if autoCommit && (GITHUB_TOKEN == "" || GITHUB_USERNAME == "") {
-		log.Fatal().Msg("github token or username is not provided")
-		return nil
+	if autoCommit {
+		if GITHUB_TOKEN == "" {
+			log.Fatal().Msg("github token is not provided")
+		}
+
+		if GITHUB_USERNAME == "" {
+			log.Fatal().Msg("github username is not provided")
+		}
 	}
 
 	gitUsername := c.String("git-username")
