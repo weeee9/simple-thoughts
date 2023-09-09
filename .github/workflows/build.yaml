@@ -27,5 +27,6 @@ jobs:
         GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
         APP_SOURCE_FOLDER: thoughts
         APP_HTML_TEMPLATES: "template/index.gohtml,template/navbar.gohtml,template/content.gohtml"
+        APP_AUTO_COMMIT: true
       run: |
         ./bin/md2html
