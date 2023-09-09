@@ -219,7 +219,7 @@ func run(c *cli.Context) error {
 	log.Info().Msg("index file generated")
 
 	if autoCommit {
-		if _, err := commitAndPushChanges(
+		if _, err := commitChanges(
 			gitUsername,
 			gitUserEmail,
 			"index.html",
@@ -236,7 +236,7 @@ func run(c *cli.Context) error {
 	}
 
 	if autoCommit {
-		hash, err := commitAndPushChanges(
+		hash, err := commitChanges(
 			gitUsername,
 			gitUserEmail,
 			pathToDestination,
@@ -261,13 +261,20 @@ func run(c *cli.Context) error {
 	}
 
 	if autoCommit {
-		if _, err := commitAndPushChanges(
+		if _, err := commitChanges(
 			gitUsername,
 			gitUserEmail,
 			"_index",
 			"update tracking index",
 		); err != nil {
 			log.Error().Err(err).Msg("failed to commit changes")
+			return err
+		}
+	}
+
+	if autoCommit {
+		if err := pushChanges(); err != nil {
+			log.Error().Err(err).Msg("failed to push changes")
 			return err
 		}
 	}
@@ -313,7 +320,7 @@ func getChangedFiles(lastCommit string) ([]string, error) {
 	return changedFiles, nil
 }
 
-func commitAndPushChanges(user, email, glob, message string) (hash string, err error) {
+func commitChanges(user, email, glob, message string) (hash string, err error) {
 	repo, err := git.PlainOpen(".")
 	if err != nil {
 		log.Error().Err(err).Msg("failed to open git repository")
@@ -346,6 +353,15 @@ func commitAndPushChanges(user, email, glob, message string) (hash string, err e
 		return "", err
 	}
 
+	return commit.String(), nil
+}
+
+func pushChanges() error {
+	repo, err := git.PlainOpen(".")
+	if err != nil {
+		return err
+	}
+
 	if err := repo.Push(
 		&git.PushOptions{
 			Auth: &http.BasicAuth{
@@ -355,11 +371,10 @@ func commitAndPushChanges(user, email, glob, message string) (hash string, err e
 		},
 	); err != nil {
 		log.Error().Err(err).Msg("failed to push changes")
-		return "", err
+		return err
 	}
 
-	return commit.String(), nil
-
+	return nil
 }
 
 func convert(filename, src, dst string, templates ...string) error {
