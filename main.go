@@ -262,7 +262,7 @@ func run(c *cli.Context) error {
 	}
 
 	if autoCommit {
-		if err := pushChanges(); err != nil {
+		if err := pushChanges(GITHUB_TOKEN); err != nil {
 			log.Error().Err(err).Msg("failed to push changes")
 			return err
 		}
@@ -345,7 +345,7 @@ func commitChanges(user, email, glob, message string) (hash string, err error) {
 	return commit.String(), nil
 }
 
-func pushChanges() error {
+func pushChanges(githubToken string) error {
 	repo, err := git.PlainOpen(".")
 	if err != nil {
 		return err
@@ -356,7 +356,7 @@ func pushChanges() error {
 			RemoteName: "origin",
 			Auth: &http.BasicAuth{
 				Username: "md2html",
-				Password: GITHUB_TOKEN,
+				Password: githubToken,
 			},
 			Progress: os.Stdout,
 		},
