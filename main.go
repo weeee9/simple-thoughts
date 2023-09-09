@@ -99,6 +99,13 @@ func main() {
 				DefaultText: "md2html",
 				Value:       "md2html",
 			},
+			&cli.StringSliceFlag{
+				Name:    "index-templates",
+				Usage:   "List of templates to use to generate index.html",
+				EnvVars: []string{"APP_INDEX_TEMPLATES"},
+				Hidden:  true,
+				Value:   cli.NewStringSlice("template/index.gohtml", "template/navbar.gohtml", "template/list.gohtml"),
+			},
 		},
 		Action: run,
 	}
@@ -113,6 +120,11 @@ type tracking struct {
 	Commit string   `json:"__commit__"`
 }
 
+type fileIndex struct {
+	Path string
+	Name string
+}
+
 var (
 	GITHUB_TOKEN    string
 	GITHUB_USERNAME string
@@ -122,6 +134,7 @@ func run(c *cli.Context) error {
 	pathToSource := c.String("source")
 	pathToDestination := c.String("destination")
 	pathToTemplates := c.StringSlice("templates")
+	indexsTemplates := c.StringSlice("index-templates")
 	pathToIndex := c.String("index")
 
 	autoCommit := c.Bool("auto-commit")
@@ -153,6 +166,7 @@ func run(c *cli.Context) error {
 	}
 
 	hasAnyChanges := false
+	fileIndexs := make([]fileIndex, 0, len(entries))
 	for _, entry := range entries {
 		filename := entry.Name()
 
@@ -160,6 +174,11 @@ func run(c *cli.Context) error {
 			log.Info().Str("filename", filename).Msg("skip non-markdown file")
 			continue
 		}
+
+		fileIndexs = append(fileIndexs, fileIndex{
+			Path: filepath.Join(pathToDestination, replaceFileExtensionToHTML(filename)),
+			Name: trimMarkdownExtension(filename),
+		})
 
 		isChangedFile := inSlice(filename, diffFiles)
 		if len(diffFiles) > 0 && !isChangedFile {
@@ -189,24 +208,41 @@ func run(c *cli.Context) error {
 		return nil
 	}
 
+	if err := generateIndexs(fileIndexs, indexsTemplates...); err != nil {
+		return err
+	}
+	log.Info().Msg("index file generated")
+
+	if autoCommit {
+		if _, err := commitAndPushChanges(
+			gitUsername,
+			gitUserEmail,
+			"index.html",
+			"update index.html",
+		); err != nil {
+			log.Error().Err(err).Msg("failed to commit changes")
+			return err
+		}
+	}
+
 	if err := createFileIfNotExists(pathToIndex); err != nil {
 		log.Error().Err(err).Msg("failed to create index file")
 		return err
 	}
 
 	if autoCommit {
-	hash, err := commitAndPushChanges(
-		gitUsername,
-		gitUserEmail,
-		pathToDestination,
-		"generated new markdown files",
-	)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to commit and push changes")
-		return err
-	}
+		hash, err := commitAndPushChanges(
+			gitUsername,
+			gitUserEmail,
+			pathToDestination,
+			"generated new markdown files",
+		)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to commit and push changes")
+			return err
+		}
 
-	track.Commit = hash
+		track.Commit = hash
 	}
 
 	updatedIndex, err := json.Marshal(track)
@@ -220,15 +256,15 @@ func run(c *cli.Context) error {
 	}
 
 	if autoCommit {
-	if _, err := commitAndPushChanges(
-		gitUsername,
-		gitUserEmail,
-		"_index",
-		"update tracking index",
-	); err != nil {
-		log.Error().Err(err).Msg("failed to commit changes")
-		return err
-	}
+		if _, err := commitAndPushChanges(
+			gitUsername,
+			gitUserEmail,
+			"_index",
+			"update tracking index",
+		); err != nil {
+			log.Error().Err(err).Msg("failed to commit changes")
+			return err
+		}
 	}
 
 	return nil
@@ -363,6 +399,31 @@ func convert(filename, src, dst string, templates ...string) error {
 	defer f.Close()
 
 	if err := tmpl.Execute(f, template.HTML(html)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func generateIndexs(fileIndexs []fileIndex, templates ...string) error {
+	f, err := os.Create("projects.html")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	tmpl, err := template.ParseFiles(templates...)
+	if err != nil {
+		return err
+	}
+
+	indexs := struct {
+		List []fileIndex
+	}{
+		List: fileIndexs,
+	}
+
+	if err := tmpl.Execute(f, indexs); err != nil {
 		return err
 	}
 

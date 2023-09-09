@@ -1,0 +1,5 @@
+{{define "yield"}}
+    <ul>
+        {{range $v := .List}}<li><a href="{{$v.Path}}">{{$v.Name}}</a></li>{{end}}
+    </ul>
+{{end}}
