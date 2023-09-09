@@ -75,14 +75,12 @@ func main() {
 				Name:        "github-token",
 				Usage:       "Github token to push changes",
 				EnvVars:     []string{"GITHUB_TOKEN"},
-				Required:    true,
 				Destination: &GITHUB_TOKEN,
 			},
 			&cli.StringFlag{
 				Name:        "github-username",
 				Usage:       "Github username to push changes",
 				EnvVars:     []string{"GITHUB_USERNAME"},
-				Required:    true,
 				Destination: &GITHUB_USERNAME,
 			},
 			&cli.StringFlag{
@@ -125,6 +123,13 @@ func run(c *cli.Context) error {
 	pathToDestination := c.String("destination")
 	pathToTemplates := c.StringSlice("templates")
 	pathToIndex := c.String("index")
+
+	autoCommit := c.Bool("auto-commit")
+
+	if autoCommit && (GITHUB_TOKEN == "" || GITHUB_USERNAME == "") {
+		log.Fatal().Msg("github token or username is not provided")
+		return nil
+	}
 
 	gitUsername := c.String("git-username")
 	gitUserEmail := c.String("git-user-email")
@@ -189,6 +194,7 @@ func run(c *cli.Context) error {
 		return err
 	}
 
+	if autoCommit {
 	hash, err := commitAndPushChanges(
 		gitUsername,
 		gitUserEmail,
@@ -201,6 +207,7 @@ func run(c *cli.Context) error {
 	}
 
 	track.Commit = hash
+	}
 
 	updatedIndex, err := json.Marshal(track)
 	if err != nil {
@@ -212,6 +219,7 @@ func run(c *cli.Context) error {
 		return err
 	}
 
+	if autoCommit {
 	if _, err := commitAndPushChanges(
 		gitUsername,
 		gitUserEmail,
@@ -220,6 +228,7 @@ func run(c *cli.Context) error {
 	); err != nil {
 		log.Error().Err(err).Msg("failed to commit changes")
 		return err
+	}
 	}
 
 	return nil
