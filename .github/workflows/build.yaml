@@ -25,7 +25,6 @@ jobs:
     - name: Run md2html
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GITHUB_USERNAME: ${{ secrets.GIT_USERNAME }}
         APP_SOURCE_FOLDER: thoughts
         APP_HTML_TEMPLATES: "template/index.gohtml,template/navbar.gohtml,template/content.gohtml"
         APP_AUTO_COMMIT: true
