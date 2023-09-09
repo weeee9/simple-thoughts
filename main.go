@@ -151,6 +151,11 @@ func run(c *cli.Context) error {
 	for _, entry := range entries {
 		filename := entry.Name()
 
+		if !isMarkdownFile(filename) {
+			log.Info().Str("filename", filename).Msg("skip non-markdown file")
+			continue
+		}
+
 		isChangedFile := inSlice(filename, diffFiles)
 		if len(diffFiles) > 0 && !isChangedFile {
 			if !inSlice(filename, diffFiles) {
@@ -160,11 +165,6 @@ func run(c *cli.Context) error {
 
 		if !isChangedFile && inSlice(filename, track.Files) {
 			log.Info().Str("filename", filename).Msg("skip already converted markdown file")
-			continue
-		}
-
-		if !isMarkdownFile(filename) {
-			log.Info().Str("filename", filename).Msg("skip non-markdown file")
 			continue
 		}
 
