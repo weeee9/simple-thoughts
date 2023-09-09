@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"os"
 	"os/exec"
@@ -78,12 +79,6 @@ func main() {
 				Destination: &GITHUB_TOKEN,
 			},
 			&cli.StringFlag{
-				Name:        "github-username",
-				Usage:       "Github username to push changes",
-				EnvVars:     []string{"GITHUB_USERNAME"},
-				Destination: &GITHUB_USERNAME,
-			},
-			&cli.StringFlag{
 				Name: "git-user-name",
 				Usage: "Git user.name to commit changes. " +
 					"Default is 'md2html', which is this App's name",
@@ -126,8 +121,7 @@ type fileIndex struct {
 }
 
 var (
-	GITHUB_TOKEN    string
-	GITHUB_USERNAME string
+	GITHUB_TOKEN string
 )
 
 func run(c *cli.Context) error {
@@ -139,14 +133,9 @@ func run(c *cli.Context) error {
 
 	autoCommit := c.Bool("auto-commit")
 
-	if autoCommit {
-		if GITHUB_TOKEN == "" {
-			log.Fatal().Msg("github token is not provided")
-		}
-
-		if GITHUB_USERNAME == "" {
-			log.Fatal().Msg("github username is not provided")
-		}
+	if autoCommit && GITHUB_TOKEN == "" {
+		log.Fatal().Msg("github token is not provided")
+		return fmt.Errorf("github token is not provided")
 	}
 
 	gitUsername := c.String("git-username")
@@ -364,10 +353,12 @@ func pushChanges() error {
 
 	if err := repo.Push(
 		&git.PushOptions{
+			RemoteName: "origin",
 			Auth: &http.BasicAuth{
-				Username: GITHUB_USERNAME,
+				Username: "md2html",
 				Password: GITHUB_TOKEN,
 			},
+			Progress: os.Stdout,
 		},
 	); err != nil {
 		log.Error().Err(err).Msg("failed to push changes")
